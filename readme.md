@@ -21,3 +21,31 @@ Main benefits of this approach are:
 Some of the drawbacks are:
 * Charts can potentially be modified manually thus provoking a situation where
   any given version of a chart has different content in different environments.
+
+
+## How does it work?
+
+### Releasing to staging
+
+Releasing a brand new app version to staging can be done through the GitHub
+Action (GHA):
+
+![image](https://user-images.githubusercontent.com/10437518/227167447-6c341914-0811-43d0-b3f3-0e0cd78cea6b.png)
+
+This will:
+1. Always bump the chart version
+2. Update the app version if provided
+3. Create a pull request with the changes
+
+Keep in mind that if you want to ship further changes to the chart, the
+recommended approach is to add more commits to the pull request generated
+by the GHA. This way reverting the chart is a matter of reverting a single
+commit.
+
+### Promoting to production
+
+As for promoting, it's even simpler, just provide the service name to the
+GHA action for promotions and it'll literally pick what's running in stage
+and set up a PR so the same is shipped to production.
+
+![image](https://user-images.githubusercontent.com/10437518/227168949-b46cbfba-2bf3-4da2-a28f-608afb5309e4.png)
