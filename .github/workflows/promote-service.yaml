@@ -1,0 +1,58 @@
+name: Promote to Production
+run-name: Promote to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: Service to promote.
+        type: string
+        required: true 
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Promote $${{inputs.service}} to Production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.WORKFLOW_PAT }}
+
+      - name: Create branch with promotion changes
+        id: promote_changes
+        shell: bash
+        run: |
+          cp staging/${{inputs.service}}/Chart.yaml production/${{inputs.service}}/Chart.yaml 
+
+          if [[ "$(git status --porcelain)" != "" ]]; then 
+            git config --global user.email "${GITHUB_ACTOR}"
+            git config --global user.name "${GITHUB_ACTOR}@users.noreply.github.com"
+
+
+            git checkout -b 'update-chart-${{github.run_number}}'
+            git add .
+            git commit -m "Update chart"
+            git push -u origin HEAD
+
+            echo 'changes=true' >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.promote_changes.outputs.changes == 'true'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.WORKFLOW_PAT }}
+          script: |
+            const { repo, owner } = context.repo;
+            const result = await github.rest.pulls.create({
+              owner,
+              repo,
+              base: 'master',
+              head: 'update-chart-${{github.run_number}}',
+              title: 'Update ${{inputs.service}} Chart',
+              body: 'Updating chart for ${{inputs.service}}'
+            });
+
+            return result
+
