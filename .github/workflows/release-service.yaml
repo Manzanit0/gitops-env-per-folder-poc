@@ -1,0 +1,79 @@
+name: Release to Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: Service to promote.
+        type: string
+        required: true 
+      app_version:
+        description: version to release.
+        type: string
+        required: false 
+
+run-name: Release ${{inputs.service}} to Staging
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Release ${{inputs.service}} to Staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.WORKFLOW_PAT }}
+
+
+      - name: Get current chart version
+        id: current_version
+        run: |
+          echo "version=$(yq '.version' charts/${{ inputs.service }}/Chart.yaml)" >> $GITHUB_OUTPUT
+
+      - name: Calculate next chart version
+        uses: technicallyjosh/next-version-action@v1
+        id: version
+        with:
+          version: ${{ steps.current_version.outputs.version }}
+          type: minor 
+
+      - name: Create branch with release changes
+        id: promote_changes
+        shell: bash
+        run: |
+          if [[ "${{inputs.app_version}}" != "" ]]; then
+            yq -i '.appVersion = "${{inputs.app_version}}"' staging/${{inputs.service}}/Chart.yaml
+            yq -i '.version = "${{ steps.version.outputs.next_version }}"' staging/${{inputs.service}}/Chart.yaml
+          fi
+
+          if [[ "$(git status --porcelain)" != "" ]]; then 
+            git config --global user.email "${GITHUB_ACTOR}"
+            git config --global user.name "${GITHUB_ACTOR}@users.noreply.github.com"
+
+
+            git checkout -b 'update-chart-${{github.run_number}}'
+            git add .
+            git commit -m "Update chart"
+            git push -u origin HEAD
+
+            echo 'changes=true' >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create pull request
+        if: steps.promote_changes.outputs.changes == 'true'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.WORKFLOW_PAT }}
+          script: |
+            const { repo, owner } = context.repo;
+            const result = await github.rest.pulls.create({
+              owner,
+              repo,
+              base: 'master',
+              head: 'update-chart-${{github.run_number}}',
+              title: 'Update ${{inputs.service}} Chart',
+              body: 'Updating chart for ${{inputs.service}}'
+            });
+
+            return result
+
