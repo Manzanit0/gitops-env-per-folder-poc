@@ -32,7 +32,7 @@ jobs:
 
       - name: Calculate next app version
         uses: technicallyjosh/next-version-action@v1
-        id: chart_version
+        id: app_version
         with:
           version: ${{ steps.current_version.outputs.app_version }}
           type: minor 
