@@ -12,6 +12,7 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: production
     name: Promote $${{inputs.service}} to Production
     steps:
       - name: Checkout
