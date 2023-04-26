@@ -1,5 +1,4 @@
 name: Automated Release
-run-name: Release foo
 
 
 # For the sake of the Demo, just track these two files. This avoid recursive
