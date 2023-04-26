@@ -1,9 +1,16 @@
 name: Automated Release
+run-name: Release foo
 
+
+# For the sake of the Demo, just track these two files. This avoid recursive
+# calling: the release is pushing a change to master on the chart files.
 on:
   push:
     branches:
       - master
+    paths:
+      - ".github/**/*"
+      - "readme.md"
 
 jobs:
   release_staging:
