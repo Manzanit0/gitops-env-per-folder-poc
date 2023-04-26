@@ -17,6 +17,7 @@ run-name: Release ${{inputs.service}} to Staging
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: staging
     name: Release ${{inputs.service}} to Staging
     steps:
       - name: Checkout
