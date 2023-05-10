@@ -35,14 +35,14 @@ jobs:
         id: chart_version
         with:
           version: ${{ steps.current_version.outputs.chart_version }}
-          type: minor 
+          type: minor
 
       - name: Calculate next app version
         uses: technicallyjosh/next-version-action@v1
         id: app_version
         with:
           version: ${{ steps.current_version.outputs.app_version }}
-          type: minor 
+          type: minor
 
       - name: Create branch with release changes
         id: promote_changes
@@ -51,7 +51,7 @@ jobs:
           yq -i '.version = "${{ steps.chart_version.outputs.next_version }}"' staging/foo/Chart.yaml
           yq -i '.appVersion = "${{ steps.app_version.outputs.next_version}}"' staging/foo/Chart.yaml
 
-          if [[ "$(git status --porcelain)" != "" ]]; then 
+          if [[ "$(git status --porcelain)" != "" ]]; then
             git config --global user.email "${GITHUB_ACTOR}"
             git config --global user.name "${GITHUB_ACTOR}@users.noreply.github.com"
 
@@ -60,10 +60,23 @@ jobs:
             git push -u origin HEAD
           fi
 
+  rollback_staging:
+    runs-on: ubuntu-latest
+    environment: staging
+    name: Release to Staging
+    needs:
+      - release_staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: master
+          token: ${{ secrets.WORKFLOW_PAT }}
+
   release_production:
     runs-on: ubuntu-latest
     environment: production
-    name: Release to production
+    name: Rollback Staging
     needs:
       - release_staging
     steps:
@@ -76,9 +89,9 @@ jobs:
       - name: Create branch with promotion changes
         shell: bash
         run: |
-          cp staging/foo/Chart.yaml production/foo/Chart.yaml 
+          cp staging/foo/Chart.yaml production/foo/Chart.yaml
 
-          if [[ "$(git status --porcelain)" != "" ]]; then 
+          if [[ "$(git status --porcelain)" != "" ]]; then
             git config --global user.email "${GITHUB_ACTOR}"
             git config --global user.name "${GITHUB_ACTOR}@users.noreply.github.com"
 
@@ -88,3 +101,16 @@ jobs:
             git commit -m "Deploy service foo to production"
             git push -u origin HEAD
           fi
+
+  rollback_production:
+    runs-on: ubuntu-latest
+    environment: production
+    name: Rollback Production
+    needs:
+      - release_production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: master
+          token: ${{ secrets.WORKFLOW_PAT }}
