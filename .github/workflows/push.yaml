@@ -15,7 +15,7 @@ jobs:
   release_staging:
     runs-on: ubuntu-latest
     environment: staging
-    name: Release to Staging
+    name: Release Staging
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -63,7 +63,7 @@ jobs:
   rollback_staging:
     runs-on: ubuntu-latest
     environment: staging
-    name: Release to Staging
+    name: Rollback Staging
     needs:
       - release_staging
     steps:
@@ -76,7 +76,7 @@ jobs:
   release_production:
     runs-on: ubuntu-latest
     environment: production
-    name: Rollback Staging
+    name: Release Production
     needs:
       - release_staging
     steps:
