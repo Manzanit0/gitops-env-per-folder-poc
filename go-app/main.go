@@ -7,4 +7,6 @@ import (
 func main() {
 	// This should throw linter errors
 	ioutil.TempDir("", "")
+
+	foo.bar
 }
